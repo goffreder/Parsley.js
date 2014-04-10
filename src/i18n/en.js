@@ -25,7 +25,9 @@ window.ParsleyConfig.i18n.en = $.extend(window.ParsleyConfig.i18n.en || {}, {
   mincheck:       "You must select at least %s choices.",
   maxcheck:       "You must select %s choices or less.",
   check:          "You must select between %s and %s choices.",
-  equalto:        "This value should be the same."
+  equalto:        "This value should be the same.",
+  greaterthan:    "This value should be greater than %s field value.",
+  lessthan:		  "This value should be less than %s field value."
 });
 
 // If file is loaded after Parsley main file, auto-load locale

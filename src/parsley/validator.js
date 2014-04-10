@@ -214,6 +214,22 @@ define('parsley/validator', [
             return $(value).length ? $(value).val() : value;
           }
         });
+      },
+      greaterthan: function (value) {
+        return $.extend(new Validator.Assert().GreaterThanReference(value), {
+          priority: 256,
+          requirementsTransformer: function () {
+            return { name : $(value).attr('alt'), value : +$(value).val() };
+          }
+        });
+      },
+      lessthan: function (value) {
+        return $.extend(new Validator.Assert().LessThanReference(value), {
+          priority: 256,
+          requirementsTransformer: function () {
+            return { name : $(value).attr('alt'), value : +$(value).val() };
+          }
+        });
       }
     }
   };

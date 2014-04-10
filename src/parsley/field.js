@@ -182,12 +182,19 @@ define('parsley/field', [
     * @param {Number}   priority          optional
     * @param {Boolean}  isDomConstraint   optional
     */
-    addConstraint: function (name, requirements, priority, isDomConstraint) {
+    addConstraint: function (name, requirements, priority, isDomConstraint, isReference) {
       name = name.toLowerCase();
 
       if ('function' === typeof window.ParsleyValidator.validators[name]) {
         var constraint = new ConstraintFactory(this, name, requirements, priority, isDomConstraint);
-
+        // if constraint is a referenced one, I add the specular constraint on the referenced field
+        if((name == 'lessthan' || name == 'greaterthan') && isReference !== true) {
+        	// I check if I already instanciated the referenced ParsleyField
+        	var referencedField = $(requirements).data('Parsley') && $(requirements).data('Parsley').__class__ == 'ParsleyField' ?
+        							$(requirements).data('Parsley') :
+        							new ParsleyField($(requirements), this.parsleyInstance).init();
+        	referencedField.addConstraint(name == 'lessthan' ? 'greaterthan' : 'lessthan', '#' + this.$element.attr('id'), priority, isDomConstraint, true);
+        }
         // if constraint already exist, delete it and push new version
         if ('undefined' !== this.constraintsByName[constraint.name])
           this.removeConstraint(constraint.name);
