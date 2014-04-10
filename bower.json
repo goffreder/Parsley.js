@@ -32,6 +32,11 @@
     "email": "guillaume@wisembly.com",
     "url": "http://guillaumepotier.com/"
   },
+  "contributor": {
+    "name": "Emanuele Biancardi",
+    "email": "goffreder@gmail.com",
+    "url": "http://arresteddeveloper.no-ip.biz/"
+  },
   "license": "MIT",
   "main": [
     "./dist/parsley.js"
