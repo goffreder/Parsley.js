@@ -254,8 +254,9 @@ window.ParsleyConfig.validators.remote = {
 
 /*!
 * Parsleyjs
-* Guillaume Potier - <guillaume@wisembly.com>
-* Version 2.0.0-rc5 - built Wed Apr 09 2014 09:38:07
+* Author: Guillaume Potier - <guillaume@wisembly.com>
+* Contributor: Emanuele Biancardi - <goffreder@gmail.com>
+* Version 2.0.0-rc5 - built Thu Apr 10 2014 15:57:38
 * MIT Licensed
 *
 */
@@ -427,7 +428,8 @@ window.ParsleyConfig.validators.remote = {
 /*!
 * validator.js
 * Guillaume Potier - <guillaume@wisembly.com>
-* Version 0.5.8 - built Sun Mar 16 2014 17:18:21
+* Emanuele Biancardi - <goffreder@gmail.com>
+* Version 0.5.8 - built Thu Apr 10 2014 15:40:23
 * MIT Licensed
 *
 */
@@ -440,7 +442,6 @@ window.ParsleyConfig.validators.remote = {
     this.__version__ = '0.5.8';
     this.options = options || {};
     this.bindingKey = this.options.bindingKey || '_validatorjsConstraint';
-    return this;
   };
   Validator.prototype = {
     constructor: Validator,
@@ -523,7 +524,6 @@ window.ParsleyConfig.validators.remote = {
         throw new Error( 'Should give a valid mapping object to Constraint', err, data );
       }
     }
-    return this;
   };
   Constraint.prototype = {
     constructor: Constraint,
@@ -652,7 +652,6 @@ window.ParsleyConfig.validators.remote = {
     this.groups = [];
     if ( 'undefined' !== typeof group )
       this.addGroup( group );
-    return this;
   };
   Assert.prototype = {
     construct: Assert,
@@ -863,6 +862,21 @@ window.ParsleyConfig.validators.remote = {
       };
       return this;
     },
+    GreaterThanReference: function ( reference ) {
+      this.__class__ = 'GreaterThanReference';
+      if ( 'undefined' === typeof reference )
+        throw new Error( 'GreaterThanReference must be instanciated with a value or a function' );
+      this.reference = reference;
+      this.validate = function ( value ) {
+        var reference = 'function' === typeof this.reference ? this.reference( value ) : this.reference;
+        if ( '' === value || isNaN( Number( value ) ) )
+          throw new Violation( this, value, { value: Validator.errorCode.must_be_a_number } );
+        if ( this.reference.value >= value )
+          throw new Violation( this, value );
+        return true;
+      };
+      return this;
+    },
     InstanceOf: function ( classRef ) {
       this.__class__ = 'InstanceOf';
       if ( 'undefined' === typeof classRef )
@@ -930,6 +944,21 @@ window.ParsleyConfig.validators.remote = {
           throw new Violation( this, value, { value: Validator.errorCode.must_be_a_number } );
         if ( this.threshold < value )
           throw new Violation( this, value, { threshold: this.threshold } );
+        return true;
+      };
+      return this;
+    },
+   	LessThanReference: function ( reference ) {
+      this.__class__ = 'LessThanReference';
+      if ( 'undefined' === typeof reference )
+        throw new Error( 'LessThanReference must be instanciated with a value or a function' );
+      this.reference = reference;
+      this.validate = function ( value ) {
+        var reference = 'function' === typeof this.reference ? this.reference( value ) : this.reference;
+        if ( '' === value || isNaN( Number( value ) ) )
+          throw new Violation( this, value, { value: Validator.errorCode.must_be_a_number } );
+        if ( this.reference.value <= value )
+          throw new Violation( this, value );
         return true;
       };
       return this;
@@ -1350,6 +1379,22 @@ window.ParsleyConfig.validators.remote = {
           priority: 256,
           requirementsTransformer: function () {
             return $(value).length ? $(value).val() : value;
+          }
+        });
+      },
+      greaterthan: function (value) {
+        return $.extend(new Validator.Assert().GreaterThanReference(value), {
+          priority: 256,
+          requirementsTransformer: function () {
+            return { name : $(value).attr('alt'), value : +$(value).val() };
+          }
+        });
+      },
+      lessthan: function (value) {
+        return $.extend(new Validator.Assert().LessThanReference(value), {
+          priority: 256,
+          requirementsTransformer: function () {
+            return { name : $(value).attr('alt'), value : +$(value).val() };
           }
         });
       }
@@ -1935,10 +1980,18 @@ window.ParsleyConfig.validators.remote = {
     * @param {Number}   priority          optional
     * @param {Boolean}  isDomConstraint   optional
     */
-    addConstraint: function (name, requirements, priority, isDomConstraint) {
+    addConstraint: function (name, requirements, priority, isDomConstraint, isReference) {
       name = name.toLowerCase();
       if ('function' === typeof window.ParsleyValidator.validators[name]) {
         var constraint = new ConstraintFactory(this, name, requirements, priority, isDomConstraint);
+        // if constraint is a referenced one, I add the specular constraint on the referenced field
+        if((name == 'lessthan' || name == 'greaterthan') && isReference !== true) {
+        	// I check if I already instanciated the referenced ParsleyField
+        	var referencedField = $(requirements).data('Parsley') && $(requirements).data('Parsley').__class__ == 'ParsleyField' ?
+        							$(requirements).data('Parsley') :
+        							new ParsleyField($(requirements), this.parsleyInstance).init();
+        	referencedField.addConstraint(name == 'lessthan' ? 'greaterthan' : 'lessthan', '#' + this.$element.attr('id'), priority, isDomConstraint, true);
+        }
         // if constraint already exist, delete it and push new version
         if ('undefined' !== this.constraintsByName[constraint.name])
           this.removeConstraint(constraint.name);
@@ -2116,7 +2169,9 @@ window.ParsleyConfig.i18n.en = $.extend(window.ParsleyConfig.i18n.en || {}, {
   mincheck:       "You must select at least %s choices.",
   maxcheck:       "You must select %s choices or less.",
   check:          "You must select between %s and %s choices.",
-  equalto:        "This value should be the same."
+  equalto:        "This value should be the same.",
+  greaterthan:    "This value should be greater than %s field value.",
+  lessthan:		  "This value should be less than %s field value."
 });
 // If file is loaded after Parsley main file, auto-load locale
 if ('undefined' !== typeof window.ParsleyValidator)
